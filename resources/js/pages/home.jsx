@@ -42,6 +42,16 @@ const emergencyContacts = [
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authForm, setAuthForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    submitted: false,
+    message: '',
+  });
   const [modalStep, setModalStep] = useState('location'); // 'location' | 'choices' | 'contacts' | 'report'
   const [locationState, setLocationState] = useState({
     status: 'idle', // 'idle' | 'requesting' | 'granted' | 'denied' | 'unsupported'
@@ -57,19 +67,53 @@ export default function Home() {
   });
 
   useEffect(() => {
-    if (!locationModalOpen) {
+    if (!locationModalOpen && !authModalOpen) {
       return undefined;
     }
 
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setLocationModalOpen(false);
+        setAuthModalOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [locationModalOpen]);
+  }, [locationModalOpen, authModalOpen]);
+
+  const openAuthModal = (mode = 'login') => {
+    setAuthMode(mode);
+    setAuthForm({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      submitted: false,
+      message: '',
+    });
+    setAuthModalOpen(true);
+  };
+
+  const handleAuthSubmit = (event) => {
+    event.preventDefault();
+    if (authMode === 'signup' && authForm.password !== authForm.confirmPassword) {
+      setAuthForm((prev) => ({
+        ...prev,
+        message: 'Passwords do not match. Please verify and try again.',
+      }));
+      return;
+    }
+
+    setAuthForm((prev) => ({
+      ...prev,
+      submitted: true,
+      message:
+        authMode === 'signup'
+          ? `Welcome to JusticePH, ${prev.name || 'Advocate'}! Your account has been initialized.`
+          : 'Successfully signed in. Welcome back to JusticePH.',
+    }));
+  };
 
   const openLocationPrompt = () => {
     setModalStep('location');
@@ -152,9 +196,28 @@ export default function Home() {
               {item.label}
             </a>
           ))}
-          <a className="nav-cta" href="#next-step" onClick={() => setMenuOpen(false)}>
-            Explore JusticePH <span aria-hidden="true">↗</span>
-          </a>
+          <div className="nav-auth-group">
+            <button
+              type="button"
+              className="nav-btn nav-btn-login"
+              onClick={() => {
+                setMenuOpen(false);
+                openAuthModal('login');
+              }}
+            >
+              Log In
+            </button>
+            <button
+              type="button"
+              className="nav-btn nav-btn-signup"
+              onClick={() => {
+                setMenuOpen(false);
+                openAuthModal('signup');
+              }}
+            >
+              Sign Up <span aria-hidden="true">↗</span>
+            </button>
+          </div>
         </nav>
       </header>
 
@@ -566,6 +629,167 @@ can change <em>where you go next.</em></h2>
                   </form>
                 )}
               </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {authModalOpen && (
+        <div
+          className="location-modal-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setAuthModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="location-modal auth-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-modal-title"
+          >
+            <div className="location-modal-header">
+              <div className="auth-tab-switch">
+                <button
+                  type="button"
+                  className={`auth-tab-btn ${authMode === 'login' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthForm((prev) => ({ ...prev, message: '', submitted: false }));
+                  }}
+                >
+                  <span className="status-dot" /> Log In
+                </button>
+                <button
+                  type="button"
+                  className={`auth-tab-btn ${authMode === 'signup' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setAuthForm((prev) => ({ ...prev, message: '', submitted: false }));
+                  }}
+                >
+                  <span className="status-dot" /> Sign Up
+                </button>
+              </div>
+              <button
+                type="button"
+                className="location-modal-close"
+                aria-label="Close pop-up"
+                onClick={() => setAuthModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <h2 id="auth-modal-title">
+              {authMode === 'login' ? 'Welcome Back to JusticePH' : 'Create Your JusticePH Account'}
+            </h2>
+            <p className="location-modal-copy">
+              {authMode === 'login'
+                ? 'Sign in to access your cases, tracked reports, and legal assistance network.'
+                : 'Join JusticePH to securely document reports, connect with lawyers, and get local aid.'}
+            </p>
+
+            {authForm.message && (
+              <div
+                className={`location-status ${
+                  authForm.submitted ? 'location-status--granted' : 'location-status--denied'
+                }`}
+                role="status"
+              >
+                <span>{authForm.message}</span>
+              </div>
+            )}
+
+            {authForm.submitted ? (
+              <div className="location-modal-actions">
+                <button
+                  type="button"
+                  className="button button-primary location-allow-btn"
+                  onClick={() => setAuthModalOpen(false)}
+                >
+                  Continue to JusticePH <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            ) : (
+              <form className="report-form" onSubmit={handleAuthSubmit}>
+                {authMode === 'signup' && (
+                  <label className="report-field">
+                    <span>Full Name</span>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Juan Dela Cruz"
+                      value={authForm.name}
+                      onChange={(e) =>
+                        setAuthForm((prev) => ({ ...prev, name: e.target.value }))
+                      }
+                    />
+                  </label>
+                )}
+
+                <label className="report-field">
+                  <span>Email Address</span>
+                  <input
+                    type="email"
+                    required
+                    placeholder="juan@example.com"
+                    value={authForm.email}
+                    onChange={(e) =>
+                      setAuthForm((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                  />
+                </label>
+
+                <label className="report-field">
+                  <span>Password</span>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Enter your password"
+                    value={authForm.password}
+                    onChange={(e) =>
+                      setAuthForm((prev) => ({ ...prev, password: e.target.value }))
+                    }
+                  />
+                </label>
+
+                {authMode === 'signup' && (
+                  <label className="report-field">
+                    <span>Confirm Password</span>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      placeholder="Re-type your password"
+                      value={authForm.confirmPassword}
+                      onChange={(e) =>
+                        setAuthForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                      }
+                    />
+                  </label>
+                )}
+
+                <div className="location-modal-actions" style={{ marginTop: '10px' }}>
+                  <button type="submit" className="button button-primary location-allow-btn">
+                    {authMode === 'login' ? 'Sign In' : 'Create Account'} <span aria-hidden="true">→</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="location-dismiss-btn"
+                    onClick={() => {
+                      const next = authMode === 'login' ? 'signup' : 'login';
+                      setAuthMode(next);
+                      setAuthForm((prev) => ({ ...prev, message: '' }));
+                    }}
+                  >
+                    {authMode === 'login' ? 'Need an account? Sign Up' : 'Already have an account? Log In'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>
