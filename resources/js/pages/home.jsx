@@ -6,6 +6,26 @@ import './home.css';
 const navigation = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'About', href: '#about' },
+  { label: 'Municipality Desk', href: '/municipality/dashboard' },
+];
+
+const PHILIPPINE_MUNICIPALITIES = [
+  'Pasig City',
+  'Quezon City',
+  'Manila City',
+  'Makati City',
+  'Taguig City',
+  'Caloocan City',
+  'Mandaluyong City',
+  'Marikina City',
+  'Parañaque City',
+  'Las Piñas City',
+  'Valenzuela City',
+  'Cebu City',
+  'Davao City',
+  'Baguio City',
+  'Antipolo City',
+  'Iloilo City',
 ];
 
 const emergencyContacts = [
@@ -47,6 +67,9 @@ export default function Home() {
   const [authForm, setAuthForm] = useState({
     name: '',
     email: '',
+    role: 'citizen', // 'citizen' | 'municipality'
+    municipality: 'Pasig City',
+    designation: 'Legal Aid Officer',
     password: '',
     confirmPassword: '',
     submitted: false,
@@ -87,6 +110,9 @@ export default function Home() {
     setAuthForm({
       name: '',
       email: '',
+      role: 'citizen',
+      municipality: 'Pasig City',
+      designation: 'Legal Aid Officer',
       password: '',
       confirmPassword: '',
       submitted: false,
@@ -110,7 +136,9 @@ export default function Home() {
       submitted: true,
       message:
         authMode === 'signup'
-          ? `Welcome to JusticePH, ${prev.name || 'Advocate'}! Your account has been initialized.`
+          ? prev.role === 'municipality'
+            ? `Welcome Officer ${prev.name || ''}! Your official LGU account for ${prev.municipality} is ready.`
+            : `Welcome to JusticePH, ${prev.name || 'Advocate'}! Your account has been initialized.`
           : 'Successfully signed in. Welcome back to JusticePH.',
     }));
   };
@@ -705,29 +733,112 @@ can change <em>where you go next.</em></h2>
 
             {authForm.submitted ? (
               <div className="location-modal-actions">
-                <button
-                  type="button"
-                  className="button button-primary location-allow-btn"
-                  onClick={() => setAuthModalOpen(false)}
-                >
-                  Continue to JusticePH <span aria-hidden="true">→</span>
-                </button>
+                {authMode === 'signup' && authForm.role === 'municipality' ? (
+                  <a
+                    href={`/municipality/dashboard?municipality=${encodeURIComponent(
+                      authForm.municipality
+                    )}&name=${encodeURIComponent(authForm.name || 'Official')}&role=${encodeURIComponent(
+                      authForm.designation
+                    )}`}
+                    className="button button-primary location-allow-btn"
+                    style={{ textDecoration: 'none', textAlign: 'center', width: '100%', display: 'inline-block' }}
+                  >
+                    Open {authForm.municipality} Dashboard <span aria-hidden="true">→</span>
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    className="button button-primary location-allow-btn"
+                    onClick={() => setAuthModalOpen(false)}
+                  >
+                    Continue to JusticePH <span aria-hidden="true">→</span>
+                  </button>
+                )}
               </div>
             ) : (
               <form className="report-form" onSubmit={handleAuthSubmit}>
                 {authMode === 'signup' && (
-                  <label className="report-field">
-                    <span>Full Name</span>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Juan Dela Cruz"
-                      value={authForm.name}
-                      onChange={(e) =>
-                        setAuthForm((prev) => ({ ...prev, name: e.target.value }))
-                      }
-                    />
-                  </label>
+                  <>
+                    <div className="role-picker">
+                      <span className="role-picker-label">Select Account Type</span>
+                      <div className="role-options-grid">
+                        <button
+                          type="button"
+                          className={`role-option-card ${authForm.role === 'citizen' ? 'is-selected' : ''}`}
+                          onClick={() => setAuthForm((prev) => ({ ...prev, role: 'citizen' }))}
+                        >
+                          <span className="role-option-title">
+                            <span>👥</span> Citizen
+                          </span>
+                          <span className="role-option-subtitle">
+                            Access hotlines, report incidents, request legal aid
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`role-option-card ${authForm.role === 'municipality' ? 'is-selected' : ''}`}
+                          onClick={() => setAuthForm((prev) => ({ ...prev, role: 'municipality' }))}
+                        >
+                          <span className="role-option-title">
+                            <span>🏛️</span> Municipality
+                          </span>
+                          <span className="role-option-subtitle">
+                            LGU Command, PAO desk, incident dispatch board
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <label className="report-field">
+                      <span>{authForm.role === 'municipality' ? 'Official / Officer Name' : 'Full Name'}</span>
+                      <input
+                        type="text"
+                        required
+                        placeholder={authForm.role === 'municipality' ? 'Atty. Maria Santos' : 'Juan Dela Cruz'}
+                        value={authForm.name}
+                        onChange={(e) =>
+                          setAuthForm((prev) => ({ ...prev, name: e.target.value }))
+                        }
+                      />
+                    </label>
+
+                    {authForm.role === 'municipality' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <label className="report-field">
+                          <span>Municipality / City</span>
+                          <select
+                            value={authForm.municipality}
+                            onChange={(e) =>
+                              setAuthForm((prev) => ({ ...prev, municipality: e.target.value }))
+                            }
+                          >
+                            {PHILIPPINE_MUNICIPALITIES.map((city) => (
+                              <option key={city} value={city}>
+                                {city}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="report-field">
+                          <span>Official Designation</span>
+                          <select
+                            value={authForm.designation}
+                            onChange={(e) =>
+                              setAuthForm((prev) => ({ ...prev, designation: e.target.value }))
+                            }
+                          >
+                            <option value="City Legal Desk Officer">City Legal Desk</option>
+                            <option value="Barangay Justice Desk Officer">Barangay Justice</option>
+                            <option value="PAO Intake Officer">PAO Intake Officer</option>
+                            <option value="Crisis Response Dispatcher">Crisis Dispatcher</option>
+                            <option value="Social Welfare & Dev (CSWD)">CSWD Officer</option>
+                          </select>
+                        </label>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <label className="report-field">
