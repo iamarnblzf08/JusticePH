@@ -14,3 +14,11 @@ Route::get('/municipality/dashboard', function () {
         'officialRole' => request('role', 'Legal Desk Officer'),
     ]);
 })->name('municipality.dashboard');
+
+Route::get('/admin/dashboard', function () {
+    return Inertia::render('AdminDashboard', [
+        'adminName' => request('name', 'JusticePH Administrator'),
+        'adminEmail' => request('email', 'admin@justiceph.gov'),
+        'adminRole' => 'Super Administrator',
+    ]);
+})->name('admin.dashboard');
