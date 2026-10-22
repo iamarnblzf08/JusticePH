@@ -41,11 +41,11 @@ class AdminDashboardTest extends TestCase
         $this->assertTrue($admin->isAdmin());
         $this->assertSame('admin', $admin->role);
 
-        $municipality = User::where('email', 'pasig.desk@justiceph.gov')->first();
+        $municipality = User::where('email', 'santarosa.desk@justiceph.gov')->first();
         $this->assertNotNull($municipality);
         $this->assertTrue($municipality->isMunicipality());
         $this->assertSame('municipality', $municipality->role);
-        $this->assertSame('Pasig City', $municipality->municipality);
+        $this->assertSame('Santa Rosa City', $municipality->municipality);
 
         $citizen = User::where('email', 'citizen@justiceph.gov')->first();
         $this->assertNotNull($citizen);
@@ -60,9 +60,9 @@ class AdminDashboardTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $incident = Incident::where('case_number', 'MN-2026-088')->first();
+        $incident = Incident::where('case_number', 'LAG-SR-2026-0088')->first();
         $this->assertNotNull($incident);
-        $this->assertSame('Pasig City', $incident->municipality);
+        $this->assertSame('Santa Rosa City', $incident->municipality);
         $this->assertNotNull($incident->user);
     }
 }

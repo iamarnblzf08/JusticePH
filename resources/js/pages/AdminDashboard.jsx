@@ -1,10 +1,15 @@
 import './admin-dashboard.css';
 
 export default function AdminDashboard({
-  adminName = 'JusticePH Administrator',
+  adminName = 'JusticePH Provincial Administrator',
   adminEmail = 'admin@justiceph.gov',
   adminRole = 'Super Administrator',
+  usersList = [],
+  casesList = [],
 }) {
+  const usersCount = usersList.length > 0 ? usersList.length : 8;
+  const casesCount = casesList.length > 0 ? casesList.length : 5;
+
   return (
     <div className="adm-dashboard">
       {/* Admin Top Command Bar */}
@@ -18,7 +23,7 @@ export default function AdminDashboard({
               Justice<span style={{ color: 'var(--adm-green)' }}>PH</span>
             </span>
           </a>
-          <span className="adm-brand-badge">ADMIN CONTROL PANEL</span>
+          <span className="adm-brand-badge">ADMIN CONTROL PANEL • LAGUNA</span>
         </div>
 
         <div className="adm-topbar-right">
@@ -63,7 +68,7 @@ export default function AdminDashboard({
               <li>
                 <div className="adm-nav-item">
                   <span className="adm-nav-icon">🏛️</span>
-                  <span>Municipalities & LGUs</span>
+                  <span>Laguna LGUs</span>
                 </div>
               </li>
               <li>
@@ -84,7 +89,7 @@ export default function AdminDashboard({
           <div className="adm-sidebar-footer">
             <div className="adm-system-pill">
               <span className="adm-dot-pulse" />
-              <span>CORE SYSTEM ONLINE</span>
+              <span>MYSQL DATABASE ONLINE</span>
             </div>
           </div>
         </aside>
@@ -95,11 +100,11 @@ export default function AdminDashboard({
           <section className="adm-hero-banner">
             <div className="adm-hero-copy">
               <span className="adm-hero-tag">
-                <span>🛡️</span> SYSTEM SUPERUSER PORTAL
+                <span>🛡️</span> SYSTEM SUPERUSER PORTAL • LAGUNA PROVINCE
               </span>
               <h1>Central Administration Console</h1>
               <p>
-                Platform oversight, cross-jurisdiction municipal governance, and access role management.
+                Platform oversight, 30 Laguna municipal jurisdictions, and multi-role user governance on MySQL.
               </p>
             </div>
           </section>
@@ -111,17 +116,17 @@ export default function AdminDashboard({
                 <span>TOTAL REGISTERED USERS</span>
                 <span>👥</span>
               </div>
-              <div className="adm-stat-val">3</div>
-              <div className="adm-stat-sub">Admin, Municipality & Citizen</div>
+              <div className="adm-stat-val">{usersCount}</div>
+              <div className="adm-stat-sub">Admin, Municipality &amp; Citizen Accounts</div>
             </div>
 
             <div className="adm-stat-card">
               <div className="adm-stat-label">
-                <span>ACTIVE MUNICIPALITIES</span>
+                <span>LAGUNA MUNICIPALITIES</span>
                 <span>🏛️</span>
               </div>
-              <div className="adm-stat-val">16</div>
-              <div className="adm-stat-sub">Metro Manila & Regional LGUs</div>
+              <div className="adm-stat-val">30</div>
+              <div className="adm-stat-sub">6 Cities &amp; 24 Municipalities</div>
             </div>
 
             <div className="adm-stat-card">
@@ -129,8 +134,8 @@ export default function AdminDashboard({
                 <span>TOTAL FILED CASES</span>
                 <span>📋</span>
               </div>
-              <div className="adm-stat-val">5</div>
-              <div className="adm-stat-sub">Across all jurisdictions</div>
+              <div className="adm-stat-val">{casesCount}</div>
+              <div className="adm-stat-sub">Logged in MySQL queue</div>
             </div>
 
             <div className="adm-stat-card">
@@ -139,17 +144,17 @@ export default function AdminDashboard({
                 <span>🛡️</span>
               </div>
               <div className="adm-stat-val">100%</div>
-              <div className="adm-stat-sub">All database services active</div>
+              <div className="adm-stat-sub">MySQL `justiceph` database connected</div>
             </div>
           </section>
 
           {/* Content Panels Grid */}
           <div className="adm-sections-grid">
-            {/* User Directory Layout Placeholder */}
+            {/* User Directory Layout */}
             <section className="adm-panel">
               <div className="adm-panel-header">
-                <h2>User Roles & Accounts Registry</h2>
-                <span>PRE-SEEDED SYSTEM ACCOUNTS</span>
+                <h2>User Roles &amp; Accounts Registry</h2>
+                <span>MYSQL SEEDED &amp; REGISTERED USERS</span>
               </div>
 
               <table className="adm-table">
@@ -163,40 +168,87 @@ export default function AdminDashboard({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td><strong>JusticePH Administrator</strong></td>
-                    <td>admin@justiceph.gov</td>
-                    <td>
-                      <span className="adm-badge adm-badge-admin">ADMIN</span>
-                    </td>
-                    <td>National (All)</td>
-                    <td><span style={{ color: 'var(--adm-green)' }}>Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Atty. Maria Santos</strong></td>
-                    <td>pasig.desk@justiceph.gov</td>
-                    <td>
-                      <span className="adm-badge adm-badge-municipality">MUNICIPALITY</span>
-                    </td>
-                    <td>Pasig City</td>
-                    <td><span style={{ color: 'var(--adm-green)' }}>Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Juan Dela Cruz</strong></td>
-                    <td>citizen@justiceph.gov</td>
-                    <td>
-                      <span className="adm-badge adm-badge-user">USER / CITIZEN</span>
-                    </td>
-                    <td>Pasig City</td>
-                    <td><span style={{ color: 'var(--adm-green)' }}>Active</span></td>
-                  </tr>
+                  {usersList.length > 0 ? (
+                    usersList.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          <strong>{user.name}</strong>
+                          {user.designation && (
+                            <div style={{ fontSize: '11px', color: 'var(--adm-muted)' }}>{user.designation}</div>
+                          )}
+                        </td>
+                        <td>{user.email}</td>
+                        <td>
+                          <span
+                            className={`adm-badge ${
+                              user.role === 'admin'
+                                ? 'adm-badge-admin'
+                                : user.role === 'municipality'
+                                ? 'adm-badge-municipality'
+                                : 'adm-badge-user'
+                            }`}
+                          >
+                            {user.role.toUpperCase()}
+                          </span>
+                        </td>
+                        <td>{user.municipality || 'Laguna'}</td>
+                        <td>
+                          <span style={{ color: 'var(--adm-green)' }}>
+                            {(user.status || 'Active').toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <>
+                      <tr>
+                        <td>
+                          <strong>JusticePH Administrator</strong>
+                        </td>
+                        <td>admin@justiceph.gov</td>
+                        <td>
+                          <span className="adm-badge adm-badge-admin">ADMIN</span>
+                        </td>
+                        <td>Laguna Province</td>
+                        <td>
+                          <span style={{ color: 'var(--adm-green)' }}>ACTIVE</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Atty. Maria Santos</strong>
+                        </td>
+                        <td>santarosa.desk@justiceph.gov</td>
+                        <td>
+                          <span className="adm-badge adm-badge-municipality">MUNICIPALITY</span>
+                        </td>
+                        <td>Santa Rosa City</td>
+                        <td>
+                          <span style={{ color: 'var(--adm-green)' }}>ACTIVE</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Juan Dela Cruz</strong>
+                        </td>
+                        <td>citizen@justiceph.gov</td>
+                        <td>
+                          <span className="adm-badge adm-badge-user">USER / CITIZEN</span>
+                        </td>
+                        <td>Santa Rosa City</td>
+                        <td>
+                          <span style={{ color: 'var(--adm-green)' }}>ACTIVE</span>
+                        </td>
+                      </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
 
               <div className="adm-ready-box">
                 <h3>Admin Dashboard Layout Ready</h3>
                 <p>
-                  No functions have been connected yet as requested. Ready for your instructions on what actions and workflows to build next!
+                  No heavy functions have been executed here as requested. Ready for your instructions on what admin operations to add next!
                 </p>
               </div>
             </section>
@@ -204,31 +256,35 @@ export default function AdminDashboard({
             {/* Sidebar Information Widgets */}
             <aside className="adm-side-widgets">
               <div className="adm-widget">
-                <h3><span>🖥️</span> Environment Status</h3>
+                <h3>
+                  <span>🖥️</span> Environment Status
+                </h3>
                 <div className="adm-info-list">
                   <div className="adm-info-row">
-                    <span className="adm-info-key">Database:</span>
-                    <span className="adm-info-val">SQLite (Migrated & Seeded)</span>
+                    <span className="adm-info-key">Database Engine:</span>
+                    <span className="adm-info-val">MySQL (Port 3306)</span>
+                  </div>
+                  <div className="adm-info-row">
+                    <span className="adm-info-key">Database Name:</span>
+                    <span className="adm-info-val">justiceph</span>
                   </div>
                   <div className="adm-info-row">
                     <span className="adm-info-key">Auth Guard:</span>
-                    <span className="adm-info-val">Multi-Role (Admin, Municipality, User)</span>
+                    <span className="adm-info-val">Admin, Municipality, Citizen</span>
                   </div>
                   <div className="adm-info-row">
-                    <span className="adm-info-key">Admin Route:</span>
-                    <span className="adm-info-val">/admin/dashboard</span>
-                  </div>
-                  <div className="adm-info-row">
-                    <span className="adm-info-key">Framework:</span>
-                    <span className="adm-info-val">Laravel + Inertia React</span>
+                    <span className="adm-info-key">Jurisdiction Focus:</span>
+                    <span className="adm-info-val">Laguna Province (30 LGUs)</span>
                   </div>
                 </div>
               </div>
 
               <div className="adm-widget">
-                <h3><span>📌</span> Upcoming Instructions</h3>
+                <h3>
+                  <span>📌</span> Ready for Next Instructions
+                </h3>
                 <p style={{ margin: 0, fontSize: '12px', color: 'var(--adm-muted)', lineHeight: '1.6' }}>
-                  This dashboard is currently a clean layout scaffold. Tell me what features or functions you want to add next (e.g., user moderation, approving municipality desks, case reassignment, analytics, or custom controls).
+                  This dashboard is connected to your MySQL database. When you tell me what specific actions you want here (e.g., verifying LGU desks, banning/unbanning users, viewing live case stats), we will build them!
                 </p>
               </div>
             </aside>

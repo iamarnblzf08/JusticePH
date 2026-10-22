@@ -18,54 +18,87 @@ class DatabaseSeeder extends Seeder
         $admin = User::updateOrCreate(
             ['email' => 'admin@justiceph.gov'],
             [
-                'name' => 'JusticePH Administrator',
+                'name' => 'JusticePH Provincial Administrator',
                 'password' => Hash::make('password'),
                 'role' => 'admin',
-                'designation' => 'Super Administrator',
+                'municipality' => 'Laguna Province',
+                'designation' => 'Super Administrator & Security Lead',
                 'phone' => '+63 900 000 0001',
                 'status' => 'active',
                 'email_verified_at' => now(),
             ]
         );
 
-        // 2. Municipality User
-        $municipalityUser = User::updateOrCreate(
-            ['email' => 'pasig.desk@justiceph.gov'],
+        // 2. Laguna Municipality Officials
+        $officials = [
             [
                 'name' => 'Atty. Maria Santos',
-                'password' => Hash::make('password'),
-                'role' => 'municipality',
-                'municipality' => 'Pasig City',
-                'designation' => 'City Legal Desk Officer',
-                'phone' => '+63 917 555 0100',
-                'status' => 'active',
-                'email_verified_at' => now(),
-            ]
-        );
-
-        // Secondary Municipality User (Quezon City)
-        User::updateOrCreate(
-            ['email' => 'qc.desk@justiceph.gov'],
+                'email' => 'santarosa.desk@justiceph.gov',
+                'municipality' => 'Santa Rosa City',
+                'designation' => 'City Legal Officer',
+                'phone' => '+63 917 555 0101',
+            ],
             [
-                'name' => 'Officer Ramon Reyes',
-                'password' => Hash::make('password'),
-                'role' => 'municipality',
-                'municipality' => 'Quezon City',
-                'designation' => 'Barangay Justice Coordinator',
-                'phone' => '+63 918 555 0200',
-                'status' => 'active',
-                'email_verified_at' => now(),
-            ]
-        );
+                'name' => 'Officer Marco Flores',
+                'email' => 'calamba.desk@justiceph.gov',
+                'municipality' => 'Calamba City',
+                'designation' => 'City Legal Desk Officer',
+                'phone' => '+63 917 555 0102',
+            ],
+            [
+                'name' => 'Officer Andrea Cruz',
+                'email' => 'binan.desk@justiceph.gov',
+                'municipality' => 'Biñan City',
+                'designation' => 'Barangay Justice Desk Coordinator',
+                'phone' => '+63 917 555 0103',
+            ],
+            [
+                'name' => 'Officer Danilo Reyes',
+                'email' => 'sanpedro.desk@justiceph.gov',
+                'municipality' => 'San Pedro City',
+                'designation' => 'Crisis Response & Legal Dispatcher',
+                'phone' => '+63 917 555 0104',
+            ],
+            [
+                'name' => 'Officer Elena Garcia',
+                'email' => 'losbanos.desk@justiceph.gov',
+                'municipality' => 'Los Baños',
+                'designation' => 'MDRRMO Legal Liaison Officer',
+                'phone' => '+63 917 555 0105',
+            ],
+            [
+                'name' => 'Atty. Gabriel Mendoza',
+                'email' => 'santacruz.desk@justiceph.gov',
+                'municipality' => 'Santa Cruz',
+                'designation' => 'Provincial Capital Legal Aid Officer',
+                'phone' => '+63 917 555 0106',
+            ],
+        ];
 
-        // 3. Regular Citizen User
-        $citizenUser = User::updateOrCreate(
+        foreach ($officials as $official) {
+            User::updateOrCreate(
+                ['email' => $official['email']],
+                [
+                    'name' => $official['name'],
+                    'password' => Hash::make('password'),
+                    'role' => 'municipality',
+                    'municipality' => $official['municipality'],
+                    'designation' => $official['designation'],
+                    'phone' => $official['phone'],
+                    'status' => 'active',
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
+
+        // 3. Citizen / User
+        $citizen = User::updateOrCreate(
             ['email' => 'citizen@justiceph.gov'],
             [
                 'name' => 'Juan Dela Cruz',
                 'password' => Hash::make('password'),
                 'role' => 'user',
-                'municipality' => 'Pasig City',
+                'municipality' => 'Santa Rosa City',
                 'designation' => null,
                 'phone' => '+63 918 123 4567',
                 'status' => 'active',
@@ -73,94 +106,88 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Seed Sample Incidents
-        Incident::updateOrCreate(
-            ['case_number' => 'MN-2026-088'],
+        // 4. Sample Incidents in Laguna Municipalities
+        $incidents = [
             [
-                'user_id' => $citizenUser->id,
+                'case_number' => 'LAG-SR-2026-0088',
+                'user_id' => $citizen->id,
                 'citizen_name' => 'Eduardo Ramos',
                 'phone' => '+63 917 555 0192',
-                'municipality' => 'Pasig City',
-                'barangay' => 'Brgy. Kapasigan',
+                'municipality' => 'Santa Rosa City',
+                'barangay' => 'Brgy. Tagapo',
                 'category' => 'Legal Assistance / Consultation',
                 'urgency' => 'urgent',
                 'title' => 'Wrongful eviction notice served without 30-day barangay conciliation',
-                'description' => 'Tenant received immediate notice to vacate with threats of padlock. Requesting emergency PAO injunction and barangay mediation support before 5:00 PM.',
+                'description' => 'Tenant received notice to vacate without prior Lupon Tagapamayapa mediation hearings. Requests urgent PAO Santa Rosa legal protection.',
                 'status' => 'pending',
-                'coordinates' => '14.5583, 121.0833',
-            ]
-        );
-
-        Incident::updateOrCreate(
-            ['case_number' => 'MN-2026-085'],
+                'assigned_to' => null,
+                'coordinates' => '14.3122, 121.1114',
+            ],
             [
+                'case_number' => 'LAG-CAL-2026-0085',
                 'user_id' => null,
                 'citizen_name' => 'Anonymous Citizen',
                 'phone' => '+63 920 444 8812',
-                'municipality' => 'Pasig City',
-                'barangay' => 'Brgy. San Antonio',
+                'municipality' => 'Calamba City',
+                'barangay' => 'Brgy. Real',
                 'category' => 'Domestic & Family Safety',
                 'urgency' => 'urgent',
                 'title' => 'Urgent VAWC protective order filing request (RA 9262)',
-                'description' => 'Citizen requires immediate legal escort and temporary protection order (BPO) assistance from the local barangay desk and CSWD.',
+                'description' => 'Citizen requires legal escort and temporary protection order (BPO) assistance from Calamba CSWD and Barangay desk.',
                 'status' => 'assigned',
-                'assigned_to' => 'Brgy. San Antonio VAWC Desk & CSWD',
-                'coordinates' => '14.5826, 121.0617',
-            ]
-        );
-
-        Incident::updateOrCreate(
-            ['case_number' => 'MN-2026-079'],
+                'assigned_to' => 'Calamba CSWD & PNP Women’s Desk',
+                'coordinates' => '14.2117, 121.1656',
+            ],
             [
+                'case_number' => 'LAG-BIN-2026-0079',
                 'user_id' => null,
                 'citizen_name' => 'Marites Alonzo',
                 'phone' => '+63 918 222 7109',
-                'municipality' => 'Pasig City',
-                'barangay' => 'Brgy. Ugong',
+                'municipality' => 'Biñan City',
+                'barangay' => 'Brgy. San Vicente',
                 'category' => 'Labor & Wage Dispute',
                 'urgency' => 'routine',
                 'title' => 'Unpaid final pay and withholding of 13th month salary',
-                'description' => 'Security guard terminated without due process hearing. Needs preparation for SEnA (Single Entry Approach) mediation conference.',
+                'description' => 'Displaced factory worker terminated without due process hearing. Preparation for SEnA mediation conference.',
                 'status' => 'under_review',
-                'coordinates' => '14.5889, 121.0772',
-            ]
-        );
-
-        Incident::updateOrCreate(
-            ['case_number' => 'MN-2026-074'],
+                'assigned_to' => 'PAO Biñan District',
+                'coordinates' => '14.3389, 121.0825',
+            ],
             [
+                'case_number' => 'LAG-SP-2026-0074',
                 'user_id' => null,
                 'citizen_name' => 'Roberto Valerio',
                 'phone' => '+63 927 888 3401',
-                'municipality' => 'Pasig City',
-                'barangay' => 'Brgy. Rosario',
+                'municipality' => 'San Pedro City',
+                'barangay' => 'Brgy. Cuyab',
                 'category' => 'Civil & Human Rights',
                 'urgency' => 'high',
                 'title' => 'Warrantless detention inquiry and custody rights assistance',
-                'description' => 'Family member detained beyond 36-hour inquest period under Art. 125 RPC without formal charges. Legal counsel required for inquest.',
+                'description' => 'Detained beyond statutory time limit under Art. 125 RPC without inquest docket. Requests PAO legal representation.',
                 'status' => 'assigned',
-                'assigned_to' => 'PAO District Office Pasig',
-                'coordinates' => '14.5891, 121.0898',
-            ]
-        );
-
-        Incident::updateOrCreate(
-            ['case_number' => 'MN-2026-068'],
+                'assigned_to' => 'PAO San Pedro District',
+                'coordinates' => '14.3589, 121.0167',
+            ],
             [
+                'case_number' => 'LAG-LB-2026-0068',
                 'user_id' => null,
                 'citizen_name' => 'Luzviminda Santos',
                 'phone' => '+63 905 111 6398',
-                'municipality' => 'Pasig City',
-                'barangay' => 'Brgy. Pinagbuhatan',
+                'municipality' => 'Los Baños',
+                'barangay' => 'Brgy. Batong Malake',
                 'category' => 'Barangay Dispute & Mediation',
                 'urgency' => 'routine',
                 'title' => 'Boundary encroachment and easement conciliation resolved',
                 'description' => 'Amicable settlement reached through Lupon Tagapamayapa. Formal Kasunduan signed by both parties.',
                 'status' => 'resolved',
-                'assigned_to' => 'Lupon Tagapamayapa Brgy. Pinagbuhatan',
-                'coordinates' => '14.5492, 121.0964',
-                'resolution_notes' => 'Amicable settlement signed on Oct 19, 2026.',
-            ]
-        );
+                'assigned_to' => 'Lupon Tagapamayapa Brgy. Batong Malake',
+                'coordinates' => '14.1706, 121.2433',
+                'resolution_notes' => 'Amicable settlement signed on Oct 20, 2026.',
+            ],
+        ];
+
+        foreach ($incidents as $inc) {
+            Incident::updateOrCreate(['case_number' => $inc['case_number']], $inc);
+        }
     }
 }

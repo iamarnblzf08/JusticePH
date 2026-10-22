@@ -1,144 +1,87 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { LAGUNA_MUNICIPALITIES } from '../data/lagunaMunicipalities';
 import './municipality-dashboard.css';
 
-const PHILIPPINE_MUNICIPALITIES = [
-  'Pasig City',
-  'Quezon City',
-  'Manila City',
-  'Makati City',
-  'Taguig City',
-  'Caloocan City',
-  'Mandaluyong City',
-  'Marikina City',
-  'Parañaque City',
-  'Las Piñas City',
-  'Valenzuela City',
-  'Cebu City',
-  'Davao City',
-  'Baguio City',
-  'Antipolo City',
-  'Iloilo City',
-];
-
-const INITIAL_INCIDENTS = [
-  {
-    id: 'MN-2026-088',
-    municipality: 'Pasig City',
-    barangay: 'Brgy. Kapasigan',
-    category: 'Legal Assistance / Consultation',
-    urgency: 'urgent',
-    citizenName: 'Eduardo Ramos',
-    phone: '+63 917 555 0192',
-    timestamp: '14 minutes ago',
-    title: 'Wrongful eviction notice served without 30-day barangay conciliation',
-    description: 'Tenant received immediate notice to vacate with threats of padlock. Requesting emergency PAO injunction and barangay mediation support before 5:00 PM.',
-    status: 'pending',
-    coords: '14.5583° N, 121.0833° E',
-  },
-  {
-    id: 'MN-2026-085',
-    municipality: 'Pasig City',
-    barangay: 'Brgy. San Antonio',
-    category: 'Domestic & Family Safety',
-    urgency: 'urgent',
-    citizenName: 'Anonymous Citizen',
-    phone: '+63 920 444 8812',
-    timestamp: '42 minutes ago',
-    title: 'Urgent VAWC protective order filing request (RA 9262)',
-    description: 'Citizen requires immediate legal escort and temporary protection order (BPO) assistance from the local barangay desk and CSWD.',
-    status: 'assigned',
-    coords: '14.5826° N, 121.0617° E',
-  },
-  {
-    id: 'MN-2026-079',
-    municipality: 'Pasig City',
-    barangay: 'Brgy. Ugong',
-    category: 'Labor & Wage Dispute',
-    urgency: 'routine',
-    citizenName: 'Marites Alonzo',
-    phone: '+63 918 222 7109',
-    timestamp: '2 hours ago',
-    title: 'Unpaid final pay and withholding of 13th month salary',
-    description: 'Security guard terminated without due process hearing. Needs preparation for SEnA (Single Entry Approach) mediation conference.',
-    status: 'under_review',
-    coords: '14.5889° N, 121.0772° E',
-  },
-  {
-    id: 'MN-2026-074',
-    municipality: 'Pasig City',
-    barangay: 'Brgy. Rosario',
-    category: 'Civil & Human Rights',
-    urgency: 'high',
-    citizenName: 'Roberto Valerio',
-    phone: '+63 927 888 3401',
-    timestamp: '4 hours ago',
-    title: 'Warrantless detention inquiry and custody rights assistance',
-    description: 'Family member detained beyond 36-hour inquest period under Art. 125 RPC without formal charges. Legal counsel required for inquest.',
-    status: 'assigned',
-    coords: '14.5891° N, 121.0898° E',
-  },
-  {
-    id: 'MN-2026-068',
-    municipality: 'Pasig City',
-    barangay: 'Brgy. Pinagbuhatan',
-    category: 'Barangay Dispute & Mediation',
-    urgency: 'routine',
-    citizenName: 'Luzviminda Santos',
-    phone: '+63 905 111 6398',
-    timestamp: 'Yesterday at 3:15 PM',
-    title: 'Boundary encroachment and easement conciliation resolved',
-    description: 'Amicable settlement reached through Lupon Tagapamayapa. Formal Kasunduan signed by both parties.',
-    status: 'resolved',
-    coords: '14.5492° N, 121.0964° E',
-  },
-];
-
-const LOCAL_HOTLINES = [
-  { name: 'City Hall Command & Dispatch', number: '(02) 8643-1111', tel: '0286431111' },
-  { name: 'PAO District Office Pasig', number: '(02) 8641-0359', tel: '0286410359' },
-  { name: 'PNP Pasig Central Police', number: '(02) 8641-0433', tel: '0286410433' },
-  { name: 'City Social Welfare & Dev (CSWD)', number: '(02) 8643-0000', tel: '0286430000' },
-  { name: 'National Emergency 911', number: '911', tel: '911' },
-];
-
 export default function MunicipalityDashboard({
-  initialMunicipality = 'Pasig City',
+  initialMunicipality = 'Santa Rosa City',
   officialName = 'Atty. Maria Santos',
-  officialRole = 'City Legal Desk Officer',
+  officialRole = 'City Legal Officer',
+  initialCases = [],
+  authUser = null,
 }) {
   const [currentMunicipality, setCurrentMunicipality] = useState(initialMunicipality);
-  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
+  const [incidents, setIncidents] = useState(initialCases);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
 
   // Modal States
   const [logModalOpen, setLogModalOpen] = useState(false);
   const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
   const [activeBroadcast, setActiveBroadcast] = useState(
-    'Free Barangay Legal Aid & Notarization Clinic is scheduled this Friday, 9:00 AM at the Pasig City Sports Complex.'
+    'Free Barangay Legal Aid & Notarization Clinic is scheduled this Friday, 9:00 AM at the City Hall Ground Pavilion.'
   );
 
   // New Case Form
   const [newCase, setNewCase] = useState({
-    citizenName: '',
+    citizen_name: '',
     phone: '',
-    barangay: 'Brgy. Kapasigan',
+    barangay: 'Brgy. Tagapo',
     category: 'Legal Assistance / Consultation',
     urgency: 'urgent',
     title: '',
     description: '',
+    submitting: false,
   });
+
+  // CSRF helper
+  const getCsrfToken = () => {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  };
+
+  // Find current Laguna LGU details & hotlines
+  const currentLgu = useMemo(() => {
+    return (
+      LAGUNA_MUNICIPALITIES.find((m) => m.name.toLowerCase() === currentMunicipality.toLowerCase()) ||
+      LAGUNA_MUNICIPALITIES[0]
+    );
+  }, [currentMunicipality]);
+
+  // Fetch cases from MySQL when municipality changes
+  const fetchCasesForMunicipality = async (muniName) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/cases?municipality=${encodeURIComponent(muniName)}`);
+      const data = await res.json();
+      if (data.success) {
+        setIncidents(data.cases);
+      }
+    } catch {
+      // keep current state
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCasesForMunicipality(currentMunicipality);
+  }, [currentMunicipality]);
 
   // Filtered incidents
   const filteredIncidents = useMemo(() => {
     return incidents.filter((item) => {
-      const matchesSearch =
-        item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.citizenName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.barangay.toLowerCase().includes(searchQuery.toLowerCase());
+      const searchTarget = (
+        (item.case_number || item.id || '') +
+        ' ' +
+        (item.citizen_name || item.citizenName || '') +
+        ' ' +
+        (item.title || '') +
+        ' ' +
+        (item.barangay || '')
+      ).toLowerCase();
 
+      const matchesSearch = searchTarget.includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
 
@@ -156,40 +99,78 @@ export default function MunicipalityDashboard({
     };
   }, [incidents]);
 
-  const handleStatusChange = (id, newStatus) => {
+  // Handle Status Change with MySQL Persistence
+  const handleStatusChange = async (id, newStatus, assignedTo = null) => {
+    // Optimistic UI update
     setIncidents((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+      prev.map((item) => (item.id === id ? { ...item, status: newStatus, assigned_to: assignedTo } : item))
     );
+
+    try {
+      await fetch(`/api/cases/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          assigned_to: assignedTo,
+        }),
+      });
+    } catch {
+      // Revert if error
+      fetchCasesForMunicipality(currentMunicipality);
+    }
   };
 
-  const handleCreateCase = (e) => {
+  // Handle Walk-in Case Submission
+  const handleCreateCase = async (e) => {
     e.preventDefault();
-    const createdCase = {
-      id: `MN-2026-0${Math.floor(100 + Math.random() * 900)}`,
+    setNewCase((prev) => ({ ...prev, submitting: true }));
+
+    const payload = {
+      citizen_name: newCase.citizen_name,
+      phone: newCase.phone,
       municipality: currentMunicipality,
       barangay: newCase.barangay,
       category: newCase.category,
       urgency: newCase.urgency,
-      citizenName: newCase.citizenName,
-      phone: newCase.phone,
-      timestamp: 'Just now',
       title: newCase.title,
       description: newCase.description,
-      status: 'pending',
-      coords: '14.58° N, 121.08° E',
+      coordinates: `${currentLgu.lat}, ${currentLgu.lng}`,
     };
 
-    setIncidents([createdCase, ...incidents]);
-    setNewCase({
-      citizenName: '',
-      phone: '',
-      barangay: 'Brgy. Kapasigan',
-      category: 'Legal Assistance / Consultation',
-      urgency: 'urgent',
-      title: '',
-      description: '',
-    });
-    setLogModalOpen(false);
+    try {
+      const res = await fetch('/api/cases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.success && data.case) {
+        setIncidents([data.case, ...incidents]);
+        setNewCase({
+          citizen_name: '',
+          phone: '',
+          barangay: 'Brgy. Tagapo',
+          category: 'Legal Assistance / Consultation',
+          urgency: 'urgent',
+          title: '',
+          description: '',
+          submitting: false,
+        });
+        setLogModalOpen(false);
+      }
+    } catch {
+      setNewCase((prev) => ({ ...prev, submitting: false }));
+    }
   };
 
   return (
@@ -201,9 +182,11 @@ export default function MunicipalityDashboard({
             <span className="m-brand-mark">
               <span />
             </span>
-            <span>Justice<span style={{ color: 'var(--m-green)' }}>PH</span></span>
+            <span>
+              Justice<span style={{ color: 'var(--m-green)' }}>PH</span>
+            </span>
           </a>
-          <span className="m-brand-badge">LGU COMMAND DESK</span>
+          <span className="m-brand-badge">LAGUNA LGU COMMAND DESK</span>
         </div>
 
         <div className="m-topbar-center">
@@ -214,9 +197,9 @@ export default function MunicipalityDashboard({
               value={currentMunicipality}
               onChange={(e) => setCurrentMunicipality(e.target.value)}
             >
-              {PHILIPPINE_MUNICIPALITIES.map((city) => (
-                <option key={city} value={city}>
-                  {city}
+              {LAGUNA_MUNICIPALITIES.map((lgu) => (
+                <option key={lgu.name} value={lgu.name}>
+                  {lgu.name} ({lgu.type})
                 </option>
               ))}
             </select>
@@ -228,11 +211,7 @@ export default function MunicipalityDashboard({
             ← Public Portal
           </a>
 
-          <button
-            type="button"
-            className="m-btn m-btn-primary"
-            onClick={() => setLogModalOpen(true)}
-          >
+          <button type="button" className="m-btn m-btn-primary" onClick={() => setLogModalOpen(true)}>
             <span>+</span> Log Incident
           </button>
 
@@ -253,17 +232,17 @@ export default function MunicipalityDashboard({
         {/* Hero Banner */}
         <div className="m-hero-banner">
           <div className="m-banner-copy">
-            <span className="m-stat-label">LGU MUNICIPALITY DISPATCH & LEGAL DESK</span>
+            <span className="m-stat-label">LAGUNA PROVINCIAL DISPATCH &amp; LEGAL DESK</span>
             <h1>{currentMunicipality} Operation Center</h1>
             <p>
-              Real-time citizen legal distress intake, emergency dispatch coordination, and Public Attorney’s Office routing.
+              Real-time citizen legal distress intake, emergency dispatch coordination, and Public Attorney’s Office routing backed by MySQL.
             </p>
           </div>
 
           <div className="m-banner-status">
             <div className="m-live-indicator">
               <span className="m-dot-pulse" />
-              <span>LIVE INCIDENT STREAM</span>
+              <span>LIVE MYSQL STREAM</span>
             </div>
           </div>
         </div>
@@ -294,7 +273,7 @@ export default function MunicipalityDashboard({
               <span className="m-stat-icon">⚖️</span>
             </div>
             <div className="m-stat-val">{stats.underReview}</div>
-            <div className="m-stat-delta">Inquest & legal aid drafting</div>
+            <div className="m-stat-delta">Inquest &amp; legal aid drafting</div>
           </div>
 
           <div className="m-stat-card">
@@ -313,14 +292,12 @@ export default function MunicipalityDashboard({
           <section className="m-panel" aria-label="Incidents List">
             <div className="m-panel-header">
               <div className="m-panel-title-group">
-                <h2>Incoming Distress & Case Feed</h2>
-                <p>Showing {filteredIncidents.length} active records for {currentMunicipality}</p>
+                <h2>Incoming Distress &amp; Case Feed</h2>
+                <p>
+                  Showing {filteredIncidents.length} active records in <strong>{currentMunicipality}</strong>
+                </p>
               </div>
-              <button
-                type="button"
-                className="m-btn m-btn-ghost"
-                onClick={() => setBroadcastModalOpen(true)}
-              >
+              <button type="button" className="m-btn m-btn-ghost" onClick={() => setBroadcastModalOpen(true)}>
                 📢 Post Advisory
               </button>
             </div>
@@ -330,7 +307,7 @@ export default function MunicipalityDashboard({
               <input
                 type="text"
                 className="m-search-input"
-                placeholder="Search citizen name, case ID, barangay, or keyword..."
+                placeholder="Search case ref, citizen name, barangay, or title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -342,10 +319,11 @@ export default function MunicipalityDashboard({
               >
                 <option value="all">All Categories</option>
                 <option value="Legal Assistance / Consultation">Legal Assistance</option>
-                <option value="Domestic & Family Safety">Domestic & VAWC</option>
-                <option value="Labor & Wage Dispute">Labor & Wages</option>
-                <option value="Civil & Human Rights">Civil & Human Rights</option>
+                <option value="Domestic & Family Safety">Domestic &amp; VAWC</option>
+                <option value="Labor & Wage Dispute">Labor &amp; Wages</option>
+                <option value="Civil & Human Rights">Civil &amp; Human Rights</option>
                 <option value="Barangay Dispute & Mediation">Barangay Dispute</option>
+                <option value="Land & Tenancy Dispute">Land &amp; Tenancy</option>
               </select>
 
               <select
@@ -363,97 +341,119 @@ export default function MunicipalityDashboard({
 
             {/* Cases List */}
             <div className="m-cases-list">
-              {filteredIncidents.length === 0 ? (
+              {loading ? (
                 <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--m-muted)' }}>
-                  <p style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 600 }}>No incidents matched your query</p>
-                  <p style={{ margin: 0, fontSize: '12px' }}>Try resetting filters or searching a different term.</p>
+                  Loading {currentMunicipality} cases from MySQL…
+                </div>
+              ) : filteredIncidents.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--m-muted)' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: '15px', fontWeight: 600 }}>
+                    No incident cases found for {currentMunicipality}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px' }}>
+                    Citizens filing for this municipality will automatically appear here.
+                  </p>
                 </div>
               ) : (
-                filteredIncidents.map((incident) => (
-                  <article key={incident.id} className="m-case-item">
-                    <div className="m-case-header">
-                      <div className="m-case-id-row">
-                        <span className="m-case-id">{incident.id}</span>
-                        <span
-                          className={`m-badge ${
-                            incident.urgency === 'urgent'
-                              ? 'm-badge-urgent'
-                              : incident.urgency === 'high'
-                              ? 'm-badge-crime'
-                              : 'm-badge-legal'
-                          }`}
-                        >
-                          {incident.urgency.toUpperCase()}
-                        </span>
-                        <span
-                          className={`m-badge ${
-                            incident.status === 'resolved'
-                              ? 'm-badge-status-resolved'
-                              : incident.status === 'assigned'
-                              ? 'm-badge-status-assigned'
-                              : 'm-badge-status-pending'
-                          }`}
-                        >
-                          {incident.status.replace('_', ' ').toUpperCase()}
+                filteredIncidents.map((incident) => {
+                  const caseId = incident.case_number || incident.id;
+                  const citizenName = incident.citizen_name || incident.citizenName;
+                  const phone = incident.phone;
+
+                  return (
+                    <article key={incident.id || caseId} className="m-case-item">
+                      <div className="m-case-header">
+                        <div className="m-case-id-row">
+                          <span className="m-case-id">{caseId}</span>
+                          <span
+                            className={`m-badge ${
+                              incident.urgency === 'urgent'
+                                ? 'm-badge-urgent'
+                                : incident.urgency === 'high'
+                                ? 'm-badge-crime'
+                                : 'm-badge-legal'
+                            }`}
+                          >
+                            {(incident.urgency || 'ROUTINE').toUpperCase()}
+                          </span>
+                          <span
+                            className={`m-badge ${
+                              incident.status === 'resolved'
+                                ? 'm-badge-status-resolved'
+                                : incident.status === 'assigned'
+                                ? 'm-badge-status-assigned'
+                                : 'm-badge-status-pending'
+                            }`}
+                          >
+                            {(incident.status || 'pending').replace('_', ' ').toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="m-case-time">
+                          {incident.created_at ? new Date(incident.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
                         </span>
                       </div>
-                      <span className="m-case-time">{incident.timestamp}</span>
-                    </div>
 
-                    <h3 className="m-case-title">{incident.title}</h3>
-                    <p className="m-case-desc">{incident.description}</p>
+                      <h3 className="m-case-title">{incident.title}</h3>
+                      <p className="m-case-desc">{incident.description}</p>
 
-                    <div className="m-case-footer">
-                      <div className="m-case-meta">
-                        <span className="m-case-location">
-                          📍 {incident.barangay}
-                        </span>
-                        <span>👤 {incident.citizenName}</span>
-                        <span>🏷️ {incident.category}</span>
+                      <div className="m-case-footer">
+                        <div className="m-case-meta">
+                          <span className="m-case-location">📍 {incident.barangay}</span>
+                          <span>👤 {citizenName}</span>
+                          <span>🏷️ {incident.category}</span>
+                        </div>
+
+                        <div className="m-case-actions">
+                          {phone && (
+                            <a
+                              href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
+                              className="m-btn-call"
+                              title={`Direct call to ${citizenName}`}
+                            >
+                              📞 Call Citizen ({phone})
+                            </a>
+                          )}
+
+                          {incident.status !== 'resolved' ? (
+                            <button
+                              type="button"
+                              className="m-btn m-btn-ghost"
+                              onClick={() => handleStatusChange(incident.id, 'resolved')}
+                              title="Mark this case resolved"
+                            >
+                              ✓ Resolve
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="m-btn m-btn-ghost"
+                              onClick={() => handleStatusChange(incident.id, 'under_review')}
+                              title="Re-open this case for review"
+                            >
+                              Re-open
+                            </button>
+                          )}
+
+                          {incident.status === 'pending' && (
+                            <button
+                              type="button"
+                              className="m-btn m-btn-primary"
+                              onClick={() =>
+                                handleStatusChange(
+                                  incident.id,
+                                  'assigned',
+                                  `PAO ${currentMunicipality} District Office`
+                                )
+                              }
+                            >
+                              Assign PAO →
+                            </button>
+                          )}
+                        </div>
                       </div>
-
-                      <div className="m-case-actions">
-                        <a
-                          href={`tel:${incident.phone.replace(/[^0-9+]/g, '')}`}
-                          className="m-btn-call"
-                          title={`Direct call to ${incident.citizenName}`}
-                        >
-                          📞 Call Citizen ({incident.phone})
-                        </a>
-
-                        {incident.status !== 'resolved' ? (
-                          <button
-                            type="button"
-                            className="m-btn m-btn-ghost"
-                            onClick={() => handleStatusChange(incident.id, 'resolved')}
-                            title="Mark this case resolved"
-                          >
-                            ✓ Resolve
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="m-btn m-btn-ghost"
-                            onClick={() => handleStatusChange(incident.id, 'under_review')}
-                            title="Re-open this case for review"
-                          >
-                            Re-open
-                          </button>
-                        )}
-
-                        {incident.status === 'pending' && (
-                          <button
-                            type="button"
-                            className="m-btn m-btn-primary"
-                            onClick={() => handleStatusChange(incident.id, 'assigned')}
-                          >
-                            Assign PAO →
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </article>
-                ))
+                    </article>
+                  );
+                })
               )}
             </div>
           </section>
@@ -471,13 +471,13 @@ export default function MunicipalityDashboard({
               </div>
             </div>
 
-            {/* Quick Hotline Directory */}
+            {/* Quick Hotline Directory for this Laguna LGU */}
             <div className="m-sidebar-card">
               <h3>
-                <span>📞</span> Local Emergency Hotlines
+                <span>📞</span> {currentMunicipality} Hotlines
               </h3>
               <div className="m-hotlines-list">
-                {LOCAL_HOTLINES.map((hotline) => (
+                {currentLgu.hotlines.map((hotline) => (
                   <div key={hotline.name} className="m-hotline-row">
                     <div>
                       <div className="m-hotline-name">{hotline.name}</div>
@@ -485,7 +485,11 @@ export default function MunicipalityDashboard({
                         {hotline.number}
                       </a>
                     </div>
-                    <a href={`tel:${hotline.tel}`} className="m-btn-call" style={{ padding: '4px 8px', fontSize: '11px' }}>
+                    <a
+                      href={`tel:${hotline.tel}`}
+                      className="m-btn-call"
+                      style={{ padding: '4px 8px', fontSize: '11px' }}
+                    >
                       Call
                     </a>
                   </div>
@@ -496,19 +500,19 @@ export default function MunicipalityDashboard({
             {/* Protocol Checklist */}
             <div className="m-sidebar-card">
               <h3>
-                <span>🛡️</span> Inquest Protocol (Art. 125)
+                <span>🛡️</span> Laguna PAO Inquest Protocol
               </h3>
               <div style={{ fontSize: '12px', color: '#c5d5cb', lineHeight: '1.6' }}>
                 <p style={{ margin: '0 0 8px' }}>
-                  <strong>Time limits for warrantless custody:</strong>
+                  <strong>Art. 125 RPC Custody Limits:</strong>
                 </p>
                 <ul style={{ margin: 0, paddingLeft: '18px' }}>
-                  <li>Light penalties: 12 Hours</li>
-                  <li>Correctional penalties: 18 Hours</li>
-                  <li>Afflictive / Capital: 36 Hours</li>
+                  <li>Light offenses: 12 Hours</li>
+                  <li>Correctional offenses: 18 Hours</li>
+                  <li>Afflictive/Capital: 36 Hours</li>
                 </ul>
                 <p style={{ margin: '10px 0 0', fontSize: '11px', color: 'var(--m-muted)' }}>
-                  If past statutory limit without inquest docket, notify PAO for immediate petition.
+                  If exceeding statutory duration without filing in court, immediate PAO release petition applies.
                 </p>
               </div>
             </div>
@@ -521,12 +525,8 @@ export default function MunicipalityDashboard({
         <div className="m-modal-backdrop" role="dialog" aria-modal="true">
           <div className="m-modal-box">
             <div className="m-modal-header">
-              <h3>Log Walk-In or Hotline Incident</h3>
-              <button
-                type="button"
-                className="m-btn m-btn-ghost"
-                onClick={() => setLogModalOpen(false)}
-              >
+              <h3>Log Walk-In or Hotline Incident ({currentMunicipality})</h3>
+              <button type="button" className="m-btn m-btn-ghost" onClick={() => setLogModalOpen(false)}>
                 ✕
               </button>
             </div>
@@ -538,8 +538,8 @@ export default function MunicipalityDashboard({
                   type="text"
                   required
                   placeholder="e.g. Maria Clara Santos"
-                  value={newCase.citizenName}
-                  onChange={(e) => setNewCase({ ...newCase, citizenName: e.target.value })}
+                  value={newCase.citizen_name}
+                  onChange={(e) => setNewCase({ ...newCase, citizen_name: e.target.value })}
                 />
               </label>
 
@@ -560,7 +560,7 @@ export default function MunicipalityDashboard({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Brgy. Kapasigan"
+                    placeholder="e.g. Brgy. Tagapo"
                     value={newCase.barangay}
                     onChange={(e) => setNewCase({ ...newCase, barangay: e.target.value })}
                   />
@@ -586,10 +586,11 @@ export default function MunicipalityDashboard({
                   onChange={(e) => setNewCase({ ...newCase, category: e.target.value })}
                 >
                   <option value="Legal Assistance / Consultation">Legal Assistance</option>
-                  <option value="Domestic & Family Safety">Domestic & VAWC</option>
-                  <option value="Labor & Wage Dispute">Labor & Wages</option>
-                  <option value="Civil & Human Rights">Civil & Human Rights</option>
+                  <option value="Domestic & Family Safety">Domestic &amp; VAWC</option>
+                  <option value="Labor & Wage Dispute">Labor &amp; Wages</option>
+                  <option value="Civil & Human Rights">Civil &amp; Human Rights</option>
                   <option value="Barangay Dispute & Mediation">Barangay Dispute</option>
+                  <option value="Land & Tenancy Dispute">Land &amp; Tenancy</option>
                 </select>
               </label>
 
@@ -598,14 +599,14 @@ export default function MunicipalityDashboard({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Request for inquest counsel"
+                  placeholder="e.g. Eviction threat without barangay conciliation"
                   value={newCase.title}
                   onChange={(e) => setNewCase({ ...newCase, title: e.target.value })}
                 />
               </label>
 
               <label className="m-form-group">
-                <span>Details & Initial Action Taken</span>
+                <span>Details &amp; Initial Action Taken</span>
                 <textarea
                   rows={3}
                   required
@@ -616,15 +617,11 @@ export default function MunicipalityDashboard({
               </label>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-                <button
-                  type="button"
-                  className="m-btn m-btn-ghost"
-                  onClick={() => setLogModalOpen(false)}
-                >
+                <button type="button" className="m-btn m-btn-ghost" onClick={() => setLogModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="m-btn m-btn-primary">
-                  Record & Dispatch →
+                <button type="submit" className="m-btn m-btn-primary" disabled={newCase.submitting}>
+                  {newCase.submitting ? 'Saving to MySQL…' : 'Record & Dispatch →'}
                 </button>
               </div>
             </form>
@@ -637,12 +634,8 @@ export default function MunicipalityDashboard({
         <div className="m-modal-backdrop" role="dialog" aria-modal="true">
           <div className="m-modal-box">
             <div className="m-modal-header">
-              <h3>Update Municipality Advisory</h3>
-              <button
-                type="button"
-                className="m-btn m-btn-ghost"
-                onClick={() => setBroadcastModalOpen(false)}
-              >
+              <h3>Update {currentMunicipality} Advisory</h3>
+              <button type="button" className="m-btn m-btn-ghost" onClick={() => setBroadcastModalOpen(false)}>
                 ✕
               </button>
             </div>
@@ -664,11 +657,7 @@ export default function MunicipalityDashboard({
               </label>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px' }}>
-                <button
-                  type="button"
-                  className="m-btn m-btn-ghost"
-                  onClick={() => setBroadcastModalOpen(false)}
-                >
+                <button type="button" className="m-btn m-btn-ghost" onClick={() => setBroadcastModalOpen(false)}>
                   Close
                 </button>
                 <button type="submit" className="m-btn m-btn-primary">
